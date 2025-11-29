@@ -11,9 +11,366 @@
 </head>
 <body>
     <div id="root"></div>
+    
     <script type="text/babel">
-        // PASTE THE ENTIRE REACT CODE FROM THE ARTIFACT HERE
+        const { useState, useMemo } = React;
         
+        function ThreatIntelDashboard() {
+          const [loading, setLoading] = useState(false);
+          const [threats, setThreats] = useState([]);
+          const [searchTerm, setSearchTerm] = useState('');
+          const [selectedSource, setSelectedSource] = useState('all');
+          const [viewMode, setViewMode] = useState('list');
+          const [filterSeverity, setFilterSeverity] = useState('all');
+
+          const Shield = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>;
+          const Search = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>;
+          const Globe = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+          const AlertTriangle = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+          const ExternalLink = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
+          const RefreshCw = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>;
+          const Download = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
+          const BarChart3 = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>;
+          const Calendar = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+          const TrendingUp = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
+          const Filter = (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>;
+
+          const sources = [
+            { id: 'all', name: 'All Sources', query: 'cybersecurity threats news today' },
+            { id: 'ransomware', name: 'Ransomware', query: 'ransomware attack news today' },
+            { id: 'vulnerabilities', name: 'Vulnerabilities', query: 'CVE vulnerability discovered today' },
+            { id: 'malware', name: 'Malware', query: 'malware threat news today' },
+            { id: 'data-breach', name: 'Data Breaches', query: 'data breach news today' },
+            { id: 'apt', name: 'APT Groups', query: 'APT advanced persistent threat today' },
+            { id: 'phishing', name: 'Phishing', query: 'phishing campaign news today' },
+            { id: 'zero-day', name: 'Zero-Day', query: 'zero-day exploit news today' },
+          ];
+
+          const fetchThreats = async (query) => {
+            setLoading(true);
+            try {
+              const response = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  model: "claude-sonnet-4-20250514",
+                  max_tokens: 4000,
+                  messages: [
+                    {
+                      role: "user",
+                      content: `Search for recent ${query}. Return ONLY a JSON array of the top 12 most important threats/news. Each object must have: title, source, date (format: YYYY-MM-DD or "Today"), severity (critical/high/medium/low), summary (2-3 sentences max), category, impactScore (1-10), and url (the direct link to the article). No markdown, no preamble, just the JSON array.`
+                    }
+                  ],
+                  tools: [
+                    {
+                      type: "web_search_20250305",
+                      name: "web_search"
+                    }
+                  ]
+                })
+              });
+
+              const data = await response.json();
+              
+              let textContent = '';
+              for (const block of data.content) {
+                if (block.type === 'text') {
+                  textContent += block.text;
+                }
+              }
+
+              const jsonMatch = textContent.match(/\[[\s\S]*\]/);
+              if (jsonMatch) {
+                const parsed = JSON.parse(jsonMatch[0]);
+                setThreats(parsed);
+              } else {
+                setThreats([]);
+              }
+            } catch (error) {
+              console.error('Error fetching threats:', error);
+              setThreats([]);
+            }
+            setLoading(false);
+          };
+
+          const handleSourceChange = (sourceId) => {
+            setSelectedSource(sourceId);
+            const source = sources.find(s => s.id === sourceId);
+            if (source) {
+              fetchThreats(source.query);
+            }
+          };
+
+          const handleSearch = () => {
+            if (searchTerm.trim()) {
+              fetchThreats(searchTerm);
+            }
+          };
+
+          const getSeverityColor = (severity) => {
+            switch (severity?.toLowerCase()) {
+              case 'critical': return 'bg-red-100 text-red-800 border-red-300';
+              case 'high': return 'bg-orange-100 text-orange-800 border-orange-300';
+              case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+              case 'low': return 'bg-green-100 text-green-800 border-green-300';
+              default: return 'bg-gray-100 text-gray-800 border-gray-300';
+            }
+          };
+
+          const filteredThreats = useMemo(() => {
+            if (filterSeverity === 'all') return threats;
+            return threats.filter(t => t.severity?.toLowerCase() === filterSeverity);
+          }, [threats, filterSeverity]);
+
+          const stats = useMemo(() => {
+            const severityCounts = {
+              critical: threats.filter(t => t.severity?.toLowerCase() === 'critical').length,
+              high: threats.filter(t => t.severity?.toLowerCase() === 'high').length,
+              medium: threats.filter(t => t.severity?.toLowerCase() === 'medium').length,
+              low: threats.filter(t => t.severity?.toLowerCase() === 'low').length,
+            };
+
+            const categoryCounts = threats.reduce((acc, t) => {
+              const cat = t.category || 'Unknown';
+              acc[cat] = (acc[cat] || 0) + 1;
+              return acc;
+            }, {});
+
+            return { severityCounts, categoryCounts };
+          }, [threats]);
+
+          const exportToCSV = () => {
+            const headers = ['Title', 'Source', 'Date', 'Severity', 'Category', 'Summary', 'URL'];
+            const rows = threats.map(t => [
+              t.title,
+              t.source,
+              t.date,
+              t.severity,
+              t.category,
+              t.summary,
+              t.url
+            ]);
+
+            const csv = [
+              headers.join(','),
+              ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+            ].join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `threat-intel-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+          };
+
+          const exportToJSON = () => {
+            const json = JSON.stringify(threats, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `threat-intel-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+          };
+
+          return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-6">
+              <div className="max-w-7xl mx-auto">
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <Shield className="w-10 h-10 text-cyan-400" />
+                      <div>
+                        <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                          Threat Intelligence Dashboard
+                        </h1>
+                        <p className="text-slate-400 text-sm mt-1">Real-time cybersecurity threat intelligence powered by AI</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={exportToCSV}
+                        disabled={threats.length === 0}
+                        className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        CSV
+                      </button>
+                      <button
+                        onClick={exportToJSON}
+                        disabled={threats.length === 0}
+                        className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        JSON
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-800 rounded-lg p-6 mb-6 border border-slate-700">
+                  <div className="flex flex-col md:flex-row gap-4 mb-4">
+                    <div className="flex-1">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Search for specific threats..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                          className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500"
+                        />
+                        <button
+                          onClick={handleSearch}
+                          disabled={loading}
+                          className="px-6 py-2 bg-cyan-600 hover:bg-cyan-700 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                        >
+                          <Search className="w-4 h-4" />
+                          Search
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {sources.map(source => (
+                      <button
+                        key={source.id}
+                        onClick={() => handleSourceChange(source.id)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                          selectedSource === source.id
+                            ? 'bg-cyan-600 text-white'
+                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        }`}
+                      >
+                        {source.name}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setViewMode('list')}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                          viewMode === 'list' ? 'bg-slate-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        }`}
+                      >
+                        List
+                      </button>
+                      <button
+                        onClick={() => setViewMode('timeline')}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                          viewMode === 'timeline' ? 'bg-slate-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        }`}
+                      >
+                        <Calendar className="w-4 h-4" />
+                        Timeline
+                      </button>
+                      <button
+                        onClick={() => setViewMode('stats')}
+                        className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                          viewMode === 'stats' ? 'bg-slate-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        }`}
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                        Statistics
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Filter className="w-4 h-4 text-slate-400" />
+                      <select
+                        value={filterSeverity}
+                        onChange={(e) => setFilterSeverity(e.target.value)}
+                        className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                      >
+                        <option value="all">All Severities</option>
+                        <option value="critical">Critical Only</option>
+                        <option value="high">High Only</option>
+                        <option value="medium">Medium Only</option>
+                        <option value="low">Low Only</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {loading && (
+                  <div className="flex items-center justify-center py-20">
+                    <div className="text-center">
+                      <RefreshCw className="w-12 h-12 text-cyan-400 animate-spin mx-auto mb-4" />
+                      <p className="text-slate-400">Scanning threat intelligence sources...</p>
+                    </div>
+                  </div>
+                )}
+
+                {!loading && viewMode === 'list' && filteredThreats.length > 0 && (
+                  <div className="space-y-4">
+                    {filteredThreats.map((threat, index) => (
+                      <div
+                        key={index}
+                        className="bg-slate-800 rounded-lg p-6 border border-slate-700 hover:border-cyan-500 transition-all"
+                      >
+                        <div className="flex items-start justify-between gap-4 mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <AlertTriangle className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+                              <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                                {threat.url ? (
+                                  <a href={threat.url} target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors flex items-center gap-2">
+                                    {threat.title}
+                                    <ExternalLink className="w-4 h-4" />
+                                  </a>
+                                ) : (
+                                  threat.title
+                                )}
+                              </h3>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 text-sm text-slate-400 mb-3">
+                              <span className="flex items-center gap-1">
+                                <Globe className="w-4 h-4" />
+                                {threat.source}
+                              </span>
+                              {threat.date && <span>• {threat.date}</span>}
+                              {threat.category && (
+                                <span className="px-2 py-1 bg-slate-700 rounded text-slate-300">
+                                  {threat.category}
+                                </span>
+                              )}
+                              {threat.impactScore && (
+                                <span className="px-2 py-1 bg-purple-900/30 border border-purple-700 rounded text-purple-300 text-xs">
+                                  Impact: {threat.impactScore}/10
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {threat.severity && (
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getSeverityColor(threat.severity)}`}>
+                              {threat.severity.toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-slate-300 leading-relaxed">{threat.summary}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!loading && threats.length === 0 && (
+                  <div className="text-center py-20">
+                    <Shield className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                    <p className="text-slate-400 text-lg mb-4">No threats loaded yet</p>
+                    <p className="text-slate-500">Select a category or search for specific threats to get started</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<ThreatIntelDashboard />);
     </script>
